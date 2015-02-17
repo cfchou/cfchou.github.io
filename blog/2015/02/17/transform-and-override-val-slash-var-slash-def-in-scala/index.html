@@ -1,0 +1,400 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Transform and override val/var/def  | My Octopress Blog</title>
+
+	<meta name="author" content="cfchou"> 
+	
+	<meta name="description" content="val/var/def are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translate them to &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="My Octopress Blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>My Octopress Blog</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/contact">Contact</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Transform and Override Val/var/def</h2>
+	<div class="entry-content"><p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translate them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
+
+<h1>Transform val/var/def to java</h1>
+
+<p>There are a few simple rules to transform val/var/def from scala to java.
+1. For traits
+    - variables with mangled names to replace private variables; protected ones are NOT mangled
+    - getters and/or setters are generated
+    - initialisers are generated
+2. For classes
+    - getters and/or setters are generated</p>
+
+<p>Let&rsquo;s look at an example:</p>
+
+<!-- more -->
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="c1">// scala</span>
+</span><span class='line'><span class="k">trait</span> <span class="nc">A</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="mi">10</span>
+</span><span class='line'>  <span class="k">private</span> <span class="k">val</span> <span class="n">b</span>  <span class="k">=</span> <span class="mi">20</span>
+</span><span class='line'>  <span class="k">var</span> <span class="n">c</span> <span class="k">=</span> <span class="mi">30</span>
+</span><span class='line'>  <span class="k">private</span> <span class="k">var</span> <span class="n">d</span> <span class="k">=</span> <span class="mi">40</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">e</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>An interface and an abstract class is generated for trait A</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">// java</span>
+</span><span class='line'><span class="kd">interface</span> <span class="nc">A</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">// val a</span>
+</span><span class='line'>  <span class="c1">// an initialiser in the form of A$_setter$&lt;name&gt;_$eq</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$_setter_$a_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>  <span class="c1">// initialiser for val</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">a</span><span class="o">();</span>  <span class="c1">// getter</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// private val b</span>
+</span><span class='line'>  <span class="c1">// a mangled name A$$b is generated to replace &#39;b&#39;</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$_setter_$A$$b_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">A$$b</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// var c</span>
+</span><span class='line'>  <span class="c1">// no need for an initaliser for var</span>
+</span><span class='line'>  <span class="c1">// instead, var needs a setter</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">c</span><span class="o">();</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">c_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>  <span class="c1">// setter</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// private var d</span>
+</span><span class='line'>  <span class="c1">// mangled name A$$d for getter/setter</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">A$$d</span><span class="o">();</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$$d_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>  <span class="c1">// setter</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// def e</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">e</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">A$class</span>
+</span><span class='line'><span class="o">{</span>
+</span><span class='line'>  <span class="c1">// we&#39;ll see how static $init$ will be used in concrete class&#39;s constructor</span>
+</span><span class='line'>  <span class="kd">static</span> <span class="kt">void</span> <span class="nf">$init$</span><span class="o">(</span><span class="n">A</span> <span class="n">$this</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">$this</span><span class="o">.</span><span class="na">A$_setter_$a_$eq</span><span class="o">(</span><span class="mi">10</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">$this</span><span class="o">.</span><span class="na">A$_setter_$A$$b_$eq</span><span class="o">(</span><span class="mi">20</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">$this</span><span class="o">.</span><span class="na">c_$eq</span><span class="o">(</span><span class="mi">30</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">$this</span><span class="o">.</span><span class="na">A$$d_$eq</span><span class="o">(</span><span class="mi">40</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can not &ldquo;new A&rdquo; as a trait is like an interface. A concrete class extends A must be there to instantiate instances. Say we have a concrete class A1:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">A1</span> <span class="k">extends</span> <span class="n">A</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">e</span> <span class="k">=</span> <span class="mi">50</span>
+</span><span class='line'>  <span class="k">private</span> <span class="k">val</span> <span class="n">f</span> <span class="k">=</span> <span class="mi">60</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It&rsquo;s then transformed to java code:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">A1</span> <span class="kd">implements</span> <span class="n">A</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">// all fields in A, mangled or not</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">a</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">A$$b</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">c</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">A$$d</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// all implementations of getters/setters/initialisers</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">a</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">a</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$_setter_$a_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">x$1</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">a</span> <span class="o">=</span> <span class="n">x$1</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">A$$b</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">A$$b</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$_setter_$A$$b_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">x$1</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">A$$b</span> <span class="o">=</span> <span class="n">x$1</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">c</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">c</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">c_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">x$1</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">c</span> <span class="o">=</span> <span class="n">x$1</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">A$$d</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">A$$d</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="nf">A$$d_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">x$1</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">A$$d</span> <span class="o">=</span> <span class="n">x$1</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">e</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="mi">50</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// A1&#39;s newly added members, and their getters/setters.</span>
+</span><span class='line'>  <span class="c1">// No mangled names</span>
+</span><span class='line'>  <span class="c1">// No initialisers</span>
+</span><span class='line'>  <span class="c1">// access qualifier is private if it&#39;s defined so</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">f</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">f</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">f</span><span class="o">;</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">A1</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">// static method &quot;initialise&quot; trait A&#39;s members</span>
+</span><span class='line'>    <span class="n">A</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">$init$</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// initialisation of A1&#39;s added members</span>
+</span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">f</span> <span class="o">=</span> <span class="mi">60</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">// ...</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If <strong>val/var</strong> are newly declared in a class rather than a trait, the corresponding getters and/or setters. Nevertheless, no name mangling and no initialisers.</p>
+
+<h2>-</h2>
+
+<h1>Override between val/var/def</h1>
+
+<p>The other aspect of this topic is override rules. We reason about the legality by Substitution Principle or by looking at the translated java code.</p>
+
+<h3>var/def can&rsquo;t override val</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="mi">11</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">A2</span> <span class="k">extends</span> <span class="n">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">var</span> <span class="n">a</span> <span class="k">=</span> <span class="mi">12</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&gt;</span> <span class="n">error</span><span class="k">:</span> <span class="kt">variable</span> <span class="kt">a</span> <span class="kt">needs</span> <span class="kt">to</span> <span class="kt">be</span> <span class="kt">a</span> <span class="kt">stable</span><span class="o">,</span> <span class="n">immutable</span> <span class="n">value</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It&rsquo;s because clients of A1 always expects <code>a</code> to be immutable.</p>
+
+<h3>val/def can&rsquo;t override var</h3>
+
+<p>Firstly, <strong>val</strong> can&rsquo;t override <strong>var</strong>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">var</span> <span class="n">b</span> <span class="k">=</span> <span class="mi">21</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">inc_b</span> <span class="k">=</span> <span class="o">{</span> <span class="n">b</span> <span class="o">+=</span> <span class="mi">1</span> <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">A2</span> <span class="k">extends</span> <span class="n">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">val</span> <span class="n">b</span> <span class="k">=</span> <span class="mi">22</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&gt;</span> <span class="n">error</span><span class="k">:</span> <span class="kt">value</span> <span class="kt">b</span> <span class="kt">cannot</span> <span class="kt">override</span> <span class="kt">a</span> <span class="kt">mutable</span> <span class="kt">variable</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If it was allowed, what would happen when</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">val</span> <span class="n">a2</span> <span class="k">=</span> <span class="k">new</span> <span class="n">A2</span>
+</span><span class='line'><span class="n">a2</span><span class="o">.</span><span class="n">inc_b</span>    <span class="c1">// modify an immutable?</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets transformed to a getter and a setter.</p>
+
+<h3>val can override def</h3>
+
+<p>Think everyone&rsquo;s agreed.</p>
+
+<h3>var can&rsquo;t override def</h3>
+
+<p>The reason is the exact oppsite to why <strong>def</strong> can&rsquo;t override <em>var</em>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">e</span> <span class="k">=</span> <span class="mi">50</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">A2</span> <span class="k">extends</span> <span class="n">A1</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">var</span> <span class="n">e</span> <span class="k">=</span> <span class="mi">51</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&gt;</span> <span class="n">error</span><span class="k">:</span> <span class="kt">method</span> <span class="kt">e_=</span> <span class="kt">overrides</span> <span class="kt">nothing</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Recall that a pair of getter/setter are generated for <strong>var</strong>, <code>e()</code> and  <code>e_$eq()</code>, respectively. The later doesn&rsquo;t override anything hence the error.</p>
+
+<p>While <strong>var</strong> can&rsquo;t override <strong>def</strong>, it&rsquo;s alright that <strong>var</strong> <em>implements</em> <strong>abstract def</strong>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">trait</span> <span class="nc">C</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">e</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">C1</span> <span class="k">extends</span> <span class="n">C</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">var</span> <span class="n">e</span> <span class="k">=</span> <span class="mi">51</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2015-02-17T16:24:40+08:00" pubdate data-updated="true">Feb 17th, 2015</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/scala/'>scala</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
+ cfchou 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>
