@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-18T00:16:28+08:00</updated>
+  <updated>2015-02-18T00:18:10+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -18,7 +18,7 @@
     <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
-    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translate them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
+    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translates them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
