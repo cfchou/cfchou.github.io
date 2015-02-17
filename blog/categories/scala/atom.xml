@@ -4,7 +4,7 @@
   <title><![CDATA[Category: scala | Been there, done that]]></title>
   <link href="http://cfchou.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-18T00:13:30+08:00</updated>
+  <updated>2015-02-18T00:16:28+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -14,15 +14,15 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Transform and override val/var/def]]></title>
-    <link href="http://cfchou.github.io/blog/2015/02/17/transform-and-override-val-slash-var-slash-def-in-scala/"/>
+    <title type="html"><![CDATA[Translate and override val/var/def]]></title>
+    <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
-    <id>http://cfchou.github.io/blog/2015/02/17/transform-and-override-val-slash-var-slash-def-in-scala</id>
+    <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
     <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translate them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
 
-<h1>Transform val/var/def to java</h1>
+<h1>Translate val/var/def to java</h1>
 
-<p>There are a few simple rules to transform val/var/def from scala to java.
+<p>There are a few simple rules to translate val/var/def from scala to java.
 1. For traits
     - variables with mangled names to replace private variables; protected ones are NOT mangled
     - getters and/or setters are generated
@@ -264,7 +264,7 @@ val a2 = new A2
 a2.inc_b    // modify an immutable?
 </code></p>
 
-<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets transformed to a getter and a setter.</p>
+<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
 
 <h3>val can override def</h3>
 

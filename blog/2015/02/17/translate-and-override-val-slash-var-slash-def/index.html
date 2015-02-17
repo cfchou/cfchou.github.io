@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>Transform and override val/var/def  | Been there, done that</title>
+	<title>Translate and override val/var/def  | Been there, done that</title>
 
 	<meta name="author" content="cfchou"> 
 	
@@ -35,12 +35,12 @@
 </header>
 
 	<div id="content" class="inner"><article class="post">
-	<h2 class="title">Transform and Override Val/var/def</h2>
+	<h2 class="title">Translate and Override Val/var/def</h2>
 	<div class="entry-content"><p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translate them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
 
-<h1>Transform val/var/def to java</h1>
+<h1>Translate val/var/def to java</h1>
 
-<p>There are a few simple rules to transform val/var/def from scala to java.
+<p>There are a few simple rules to translate val/var/def from scala to java.
 1. For traits
     - variables with mangled names to replace private variables; protected ones are NOT mangled
     - getters and/or setters are generated
@@ -312,7 +312,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets transformed to a getter and a setter.</p>
+<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
 
 <h3>val can override def</h3>
 
