@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Scala | Been there, done that]]></title>
+  <title><![CDATA[Category: scala | Been there, done that]]></title>
   <link href="http://cfchou.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-18T00:22:15+08:00</updated>
+  <updated>2015-02-18T00:30:13+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Translate and Override Val/var/def]]></title>
+    <title type="html"><![CDATA[Translate and override val/var/def]]></title>
     <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
@@ -22,13 +22,19 @@
 
 <h1>Translate val/var/def to java</h1>
 
-<p>There are a few simple rules to translate val/var/def from scala to java.
-1. For traits
-    - variables with mangled names to replace private variables; protected ones are NOT mangled
-    - getters and/or setters are generated
-    - initialisers are generated
-2. For classes
-    - getters and/or setters are generated</p>
+<p>There are a few simple rules to translate val/var/def from scala to java.</p>
+
+<p>For traits</p>
+
+<pre><code>* variables with mangled names to replace private variables; protected ones are NOT mangled
+* getters and/or setters are generated
+* initialisers are generated
+</code></pre>
+
+<p>For classes</p>
+
+<pre><code>* getters and/or setters are generated
+</code></pre>
 
 <p>Let&rsquo;s look at an example:</p>
 
