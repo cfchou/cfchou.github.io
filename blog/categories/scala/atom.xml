@@ -4,7 +4,7 @@
   <title><![CDATA[Category: scala | Been there, done that]]></title>
   <link href="http://cfchou.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-18T00:30:13+08:00</updated>
+  <updated>2015-02-20T19:25:35+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -18,7 +18,7 @@
     <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
-    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translates them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
+    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
@@ -26,17 +26,19 @@
 
 <p>For traits</p>
 
-<pre><code>* variables with mangled names to replace private variables; protected ones are NOT mangled
-* getters and/or setters are generated
-* initialisers are generated
+<pre><code>* private variables are replaced by ones with names "mangled"; protected varibles are spared
+* getters and setters are generated
+* "initializers" are generated
 </code></pre>
 
 <p>For classes</p>
 
-<pre><code>* getters and/or setters are generated
+<pre><code>* getters and setters are generated
 </code></pre>
 
-<p>Let&rsquo;s look at an example:</p>
+<p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
+
+<p>Now let&rsquo;s look at an example:</p>
 
 <!-- more -->
 
@@ -92,8 +94,8 @@ trait A {
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">// java</span>
 </span><span class='line'><span class="kd">interface</span> <span class="nc">A</span> <span class="o">{</span>
 </span><span class='line'>  <span class="c1">// val a</span>
-</span><span class='line'>  <span class="c1">// an initialiser in the form of A$&lt;em&gt;setter$&lt;name&gt;&lt;/em&gt;$eq</span>
-</span><span class='line'>  <span class="kt">void</span> <span class="n">A$</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">setter</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">$a_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>  <span class="c1">// initialiser for val</span>
+</span><span class='line'>  <span class="c1">// an initializer in the form of A$&lt;em&gt;setter$&lt;name&gt;&lt;/em&gt;$eq</span>
+</span><span class='line'>  <span class="kt">void</span> <span class="n">A$</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">setter</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">$a_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">paramInt</span><span class="o">);</span>  <span class="c1">// initializer for val</span>
 </span><span class='line'>  <span class="kt">int</span> <span class="nf">a</span><span class="o">();</span>  <span class="c1">// getter&lt;/p&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">// private val b</span>
@@ -184,7 +186,7 @@ class A1 extends A {
 </span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">c</span><span class="o">;</span>
 </span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">A$$d</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">// all implementations of getters/setters/initialisers</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">// all implementations of getters/setters/initializers</span>
 </span><span class='line'>  <span class="kt">int</span> <span class="nf">a</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">a</span><span class="o">;</span> <span class="o">}</span>
 </span><span class='line'>  <span class="kt">void</span> <span class="n">A$</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">setter</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">$a_$eq</span><span class="o">(</span><span class="kt">int</span> <span class="n">x$1</span><span class="o">)</span> <span class="o">{</span> <span class="k">this</span><span class="o">.</span><span class="na">a</span> <span class="o">=</span> <span class="n">x$1</span><span class="o">;</span> <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
@@ -201,16 +203,16 @@ class A1 extends A {
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">// A1&amp;rsquo;s newly added members, and their getters/setters.</span>
 </span><span class='line'>  <span class="c1">// No mangled names</span>
-</span><span class='line'>  <span class="c1">// No initialisers</span>
+</span><span class='line'>  <span class="c1">// No initializers</span>
 </span><span class='line'>  <span class="c1">// access qualifier is private if it&amp;rsquo;s defined so</span>
 </span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">f</span><span class="o">;</span>
 </span><span class='line'>  <span class="kt">int</span> <span class="nf">f</span><span class="o">()</span> <span class="o">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">f</span><span class="o">;</span> <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="nf">A1</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="c1">// static method &amp;ldquo;initialise&amp;rdquo; trait A&amp;rsquo;s members</span>
+</span><span class='line'>    <span class="c1">// static method &amp;ldquo;initialize&amp;rdquo; trait A&amp;rsquo;s members</span>
 </span><span class='line'>    <span class="n">A</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">$init$</span><span class="o">(</span><span class="k">this</span><span class="o">);&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="c1">// initialisation of A1&#39;s added members</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="c1">// initialization of A1&#39;s added members</span>
 </span><span class='line'><span class="k">this</span><span class="o">.</span><span class="na">f</span> <span class="o">=</span> <span class="mi">60</span><span class="o">;</span>
 </span><span class='line'><span class="c1">// ...</span>
 </span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
@@ -219,13 +221,13 @@ class A1 extends A {
 </span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure></p>
 
-<p>If <strong>val/var</strong> are newly declared in a class rather than a trait, the corresponding getters and/or setters. Nevertheless, no name mangling and no initialisers.</p>
+<p>If <strong>val/var</strong> are newly declared in a class rather than a trait, the corresponding getters and setters. Nevertheless, no name mangling and no initializers.</p>
 
 <h2>-</h2>
 
 <h1>Override between val/var/def</h1>
 
-<p>The other aspect of this topic is override rules. We reason about the legality by Substitution Principle or by looking at the translated java code.</p>
+<p>The other aspect of this topic is override rules. The rationale behind the rules normally can be obtained from applying <strong>Substitution Principle</strong>. It&rsquo;s the error messages that sometimes may cause confusion. We&rsquo;ll reason about the legality by <strong>Substitution Principle</strong> or by looking at the translated java code.</p>
 
 <h3>var/def can&rsquo;t override val</h3>
 
@@ -239,7 +241,7 @@ class A2 extends A1 {
 &gt; error: variable a needs to be a stable, immutable value
 </code></pre>
 
-<p>It&rsquo;s because clients of A1 always expects <code>a</code> to be immutable.</p>
+<p>It&rsquo;s because clients of A1 would always expect <code>a</code> to be immutable. That&rsquo;s the value would always be the same for every reads. Nevertheless, A2 would break the contract.</p>
 
 <h3>val/def can&rsquo;t override var</h3>
 
@@ -262,34 +264,27 @@ class A2 extends A1 {
 </span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="n">blockquote</span><span class="o">&gt;&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">error</span><span class="k">:</span> <span class="kt">value</span> <span class="kt">b</span> <span class="kt">cannot</span> <span class="kt">override</span> <span class="kt">a</span> <span class="kt">mutable</span> <span class="kt">variable</span>
-</span></code></pre></td></tr></table></div></figure></p></blockquote>
+</span></code></pre></td></tr></table></div></figure>
+Clients of A1 would always expect &lsquo;a&rsquo; to be mutable and it&rsquo;s always legal to modify it.</p></blockquote>
 
-<p>If it was allowed, what would happen when
-<code>scala
-val a2 = new A2
-a2.inc_b    // modify an immutable?
-</code></p>
+<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is similar. Plus, the clients of A2 can&rsquo;t both read and write to <strong>def</strong> as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
 
-<p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is obvious. the client of <strong>def</strong> can&rsquo;t both read and write to it as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
-
-<h3>val can override def</h3>
+<h3>val can override def with no parameters</h3>
 
 <p>Think everyone&rsquo;s agreed.</p>
 
 <h3>var can&rsquo;t override def</h3>
 
-<p>The reason is the exact oppsite to why <strong>def</strong> can&rsquo;t override <em>var</em>.
-&#8220;`scala
-class A1 {
+<pre><code class="scala">class A1 {
   def e = 50
 }
 class A2 extends A1 {
   override var e = 51
-}</p>
+}
+&gt; error: method e_= overrides nothing
+</code></pre>
 
-<blockquote><p>error: method e<em>= overrides nothing
-<code>``
-Recall that a pair of getter/setter are generated for **var**,</code>e()<code>and </code>e</em>$eq()`, respectively. The later doesn&rsquo;t override anything hence the error.</p></blockquote>
+<p>Recall that a pair of getter/setter are generated for <strong>var</strong>, <code>e()</code> and  <code>e_$eq(Int)</code>, respectively. The later doesn&rsquo;t override anything hence the error.</p>
 
 <p>While <strong>var</strong> can&rsquo;t override <strong>def</strong>, it&rsquo;s alright that <strong>var</strong> <em>implements</em> <strong>abstract def</strong>.
 <code>scala
@@ -300,6 +295,8 @@ class C1 extends C {
   var e = 51
 }
 </code></p>
+
+<p>&ndash;</p>
 ]]></content>
   </entry>
   

@@ -7,7 +7,7 @@
 
 	<meta name="author" content="cfchou"> 
 	
-	<meta name="description" content="val/var/def are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translates them to &hellip;"> <meta name="keywords" content="">
+	<meta name="description" content="val/var/def are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps &hellip;"> <meta name="keywords" content="">
 
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -45,7 +45,7 @@
 			Translate and Override Val/var/def</a>
 	</h2>
 	<div class="entry-content">
-		<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind what scalac translates them to helps us to understand more about related semantics like object initialisation, override, etc..</p>
+		<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
@@ -53,17 +53,19 @@
 
 <p>For traits</p>
 
-<pre><code>* variables with mangled names to replace private variables; protected ones are NOT mangled
-* getters and/or setters are generated
-* initialisers are generated
+<pre><code>* private variables are replaced by ones with names "mangled"; protected varibles are spared
+* getters and setters are generated
+* "initializers" are generated
 </code></pre>
 
 <p>For classes</p>
 
-<pre><code>* getters and/or setters are generated
+<pre><code>* getters and setters are generated
 </code></pre>
 
-<p>Let&rsquo;s look at an example:</p>
+<p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
+
+<p>Now let&rsquo;s look at an example:</p>
 
 
 		
