@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-20T19:25:35+08:00</updated>
+  <updated>2015-02-28T19:40:25+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -14,11 +14,223 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Pattern Matching for Type Erasure]]></title>
+    <link href="http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure/"/>
+    <updated>2015-02-24T12:55:39+08:00</updated>
+    <id>http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure</id>
+    <content type="html"><![CDATA[<h1>Producer as an Actor</h1>
+
+<p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
+
+<!-- more -->
+
+
+<h1>Problems caused by Type Erasure</h1>
+
+<p><strong>Type erasure</strong> removes some type information of parameterized types. It is used to fill the gap between java generics and the legacy code written prior generics. Scala, while is subject to the fact that it is implemented in java, introduces a few mechanisms to get around type erasure.</p>
+
+<p>To see one of the limitations caused by <strong>type erasure</strong>, let&rsquo;s look at this piece of code:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span> <span class="nc">extends</span> <span class="nc">Actor</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">producer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Producer</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span><span class="k">:</span> <span class="kt">Receive</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">m</span><span class="k">:</span> <span class="kt">KeyedMesssage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">m</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="o">(</span><span class="s">&quot;Unknown is discarded&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">object</span> <span class="nc">TestApp</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">actor</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">]</span>
+</span><span class='line'>  <span class="n">actor</span> <span class="o">!</span> <span class="k">new</span> <span class="nc">KeyedMessage</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">](</span><span class="mi">1</span><span class="o">,</span> <span class="s">&quot;legal&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="n">actor</span> <span class="o">!</span> <span class="k">new</span> <span class="nc">KeyedMessage</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">](</span><span class="s">&quot;illegal&quot;</span><span class="o">,</span> <span class="s">&quot;but compiled!&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The compiler don&rsquo;t complain about the illegal message, since <strong>Actor</strong>&rsquo;s bang <code>!</code> function accepts the type of <code>Any</code>. But can we rely on pattern matching in <code>receive</code> to spot misuse and safely discard them during run-time? Unfortunately, we can&rsquo;t, at least not in this way.</p>
+
+<p>At the end of the day, JVM only knows <code>ProducerActor[_, _]</code> <code>KeyedMessage[_, _]</code> at run-time. Type information of the type parameters are not carried over from compile-time. Matching whatever instantiation of <code>KeyedMessage[X, Y]</code> to <code>KeyedMessage[_, _]</code> is unduly legal(though an unchecked warning should be issued, more on that later). In <code>TestApp</code>, the illegal <code>KeyedMessage[String, String]</code> will match the first clause. A run-time exception will be thrown because <code>producer.send</code> is expecting <code>KeyedMessage[Int, String]</code>.</p>
+
+<h1>Reification using TypeTag[T]</h1>
+
+<p>The solution, as <a href="https://groups.google.com/forum/#!topic/akka-user/7gd2Tfwax5Q">suggested by Roland Kuhn</a>, is to use <code>TypeTag[T]</code>. Basically, to make JVM aware of what <code>K, V</code> really are, a technique called <strong>type reification</strong> is needed. It&rsquo;s a behaviour that enough information is retained so that JVM knows what type parameters are during run-time. Scala&rsquo;s <code>TypeTag[T]</code> provides such functionality:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">](</span><span class="k">implicit</span> <span class="n">tk</span><span class="k">:</span> <span class="kt">TypeTag</span><span class="o">[</span><span class="kt">K</span><span class="o">],</span> <span class="n">tv</span><span class="k">:</span> <span class="kt">TypeTag</span><span class="o">[</span><span class="kt">V</span><span class="o">])</span>
+</span><span class='line'>  <span class="k">extends</span> <span class="nc">Actor</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">producer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Producer</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span><span class="k">:</span> <span class="kt">Receive</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">m</span><span class="k">:</span> <span class="kt">Msg</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">tk</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&lt;:&lt;</span> <span class="n">tk</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&amp;&amp;</span> <span class="n">m</span><span class="o">.</span><span class="n">tv</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&lt;:&lt;</span> <span class="n">tv</span><span class="o">.</span><span class="n">tpe</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">m</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="o">(</span><span class="s">&quot;Unknown is discarded&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Msg</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">](</span><span class="k">override</span> <span class="k">val</span> <span class="n">key</span><span class="k">:</span> <span class="kt">K</span><span class="o">,</span> <span class="k">override</span> <span class="k">val</span> <span class="n">value</span><span class="k">:</span> <span class="kt">V</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">(</span><span class="k">implicit</span> <span class="k">val</span> <span class="n">tk</span><span class="k">:</span> <span class="kt">TypeTag</span><span class="o">[</span><span class="kt">K</span><span class="o">],</span> <span class="k">val</span> <span class="n">tv</span><span class="k">:</span> <span class="kt">TypeTag</span><span class="o">[</span><span class="kt">V</span><span class="o">])</span>
+</span><span class='line'>  <span class="k">extends</span> <span class="nc">KeyedMessage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">](</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>TypeTag[T]::tpe</code> is reflective representation of type T. An instance of <code>A &lt;:&lt; B</code> witnesses that <strong>A is a subtype of B</strong>.</p>
+
+<p><strong>Context bound</strong> can be used to reduce a little bit of clumsiness of the <code>ProducerActor</code> interface:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">K:TypeTag</span>, <span class="kt">V:TypeTag</span><span class="o">]</span> <span class="nc">extends</span> <span class="nc">Actor</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">producer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Producer</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span><span class="k">:</span> <span class="kt">Receive</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">m</span><span class="k">:</span> <span class="kt">Msg</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">tk</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&lt;:&lt;</span> <span class="n">implicitly</span><span class="o">[</span><span class="kt">TypeTag</span><span class="o">[</span><span class="kt">K</span><span class="o">]].</span><span class="n">tpe</span>
+</span><span class='line'>        <span class="o">&amp;&amp;</span> <span class="n">m</span><span class="o">.</span><span class="n">tv</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&lt;:&lt;</span> <span class="n">implicitly</span><span class="o">[</span><span class="kt">TypeTag</span><span class="o">[</span><span class="kt">V</span><span class="o">]].</span><span class="n">tpe</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">m</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="o">(</span><span class="s">&quot;Unknown is discarded&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Props Factory Pattern</h1>
+
+<p>If we try to create a <code>ProducerActor</code> in this way:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">val</span> <span class="n">actor</span> <span class="k">=</span> <span class="n">context</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">(</span><span class="n">classOf</span><span class="o">[</span><span class="kt">ProducerActor</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">]]))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We&rsquo;ll get during run-time an <strong>IllegalArgumentException</strong>:</p>
+
+<blockquote><p>java.lang.IllegalArgumentException: no matching constructor found on class ProducerActor for arguments []</p></blockquote>
+
+<p>The reason causing this problem is subtle. I guess that&rsquo;s because the needed <strong>implicits TypeTag[K] and TypeTag[V]</strong> are not there by the time the Props is used for creating actors.</p>
+
+<p>We can define a <strong><a href="http://doc.akka.io/docs/akka/2.3.9/scala/actors.html#Recommended_Practices">Props factory</a></strong> to avoid this problem(the major benefit of using a <strong>Props factory</strong> is described in the document and is beyond the scope of this post):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">object</span> <span class="nc">ProducerActor</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">props</span><span class="o">[</span><span class="kt">K:TypeTag</span>, <span class="kt">V:TypeTag</span><span class="o">]</span><span class="k">:</span> <span class="kt">Props</span> <span class="o">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">])</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="c1">// ...</span>
+</span><span class='line'><span class="k">val</span> <span class="n">actor</span> <span class="k">=</span> <span class="n">context</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">ProducerActor</span><span class="o">.</span><span class="n">props</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span><span class="o">])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>By doing so, we&rsquo;re assured that the compiler would generate the needed implicits for <code>Props</code> object right at the line of <code>actorOf</code>.</p>
+
+<h1>Reify List[KeyedMessage[K, V]]</h1>
+
+<p>Notice that <strong>Kafka</strong> <code>Producer</code>&rsquo;s <code>send</code> actually accepts <strong>vararg</strong>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">send</span><span class="o">(</span><span class="n">messages</span><span class="k">:</span> <span class="kt">KeyedMessage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]*)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Sending one message is just sending a one-element list of messages. <code>receive</code> therefore only needs to handle the generalized case:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">receive</span><span class="k">:</span> <span class="kt">Receive</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">case</span> <span class="n">ms</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">KeyedMesssage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]]</span> <span class="k">=&gt;</span>
+</span><span class='line'>    <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">ms</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="o">(</span><span class="s">&quot;Unknown is discarded&quot;</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Likewise, JVM wouldn&rsquo;t know anything about the type parameters due to <strong>type erasure</strong>. The pattern is <code>List[_]</code> at run-time. Consequently, any <code>List[T]</code> would match. Unsurprisingly, we can enforce type safety by <code>TypeTag[T]</code>. Before we proceed, there are a few points worth noting.</p>
+
+<ol>
+<li><p>This piece of code would compile with a warning saying <strong>&ldquo;non-variable type argument KeyedMessage[K, V] in type pattern List[KeyedMessage[K, V]] is unchecked since it is eliminated by erasure&rdquo;</strong>. Such warnings rise because according to <a href="http://www.angelikalanger.com/GenericsFAQ/FAQSections/TechnicalDetails.html#FAQ001">Java Generics FAQ</a>, <strong>&ldquo;unchecked&rdquo; warnings are reported when the compiler finds a cast whose target type is either a parameterized type or a type parameter.</strong> However, why didn&rsquo;t we see any warning previously when we delt with <code>case m: KeyedMessage[K, V]</code>? Well, it is probably a bug and is addressed by <a href="https://issues.scala-lang.org/browse/SI-9188">SI-9188</a>.</p></li>
+<li><p>We wouldn&rsquo;t discuss it at length but actually <a href="http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html">there are different types of TypeTag</a>. <code>TypeTag[T]</code> is deliberately chosen since it is the strongest in the sense that it would retained type information for all nested type parameters.</p></li>
+</ol>
+
+
+<p>By and large, the solution is:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">case</span> <span class="k">class</span> <span class="nc">ListMsg</span><span class="o">[</span><span class="kt">U</span><span class="o">](</span><span class="n">ms</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">U</span><span class="o">],</span> <span class="n">tag</span><span class="k">:</span> <span class="kt">TypeTag</span><span class="o">[</span><span class="kt">U</span><span class="o">])</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">ProducerActor</span><span class="o">[</span><span class="kt">K:TypeTag</span>, <span class="kt">V:TypeTag</span><span class="o">]</span> <span class="nc">extends</span> <span class="nc">Actor</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">producer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Producer</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span><span class="k">:</span> <span class="kt">Receive</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="nc">ListMsg</span><span class="o">(</span><span class="n">ms</span><span class="o">,</span> <span class="n">tag</span><span class="o">)</span> <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">tpe</span> <span class="o">&lt;:&lt;</span> <span class="n">typeOf</span><span class="o">[</span><span class="kt">KeyedMessage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]]</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">tmp</span> <span class="k">=</span> <span class="n">ms</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">KeyedMessage</span><span class="o">[</span><span class="kt">K</span>, <span class="kt">V</span><span class="o">]]]</span>
+</span><span class='line'>      <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">tmp</span><span class="k">:</span> <span class="k">_</span><span class="kt">*</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="o">(</span><span class="s">&quot;Unknown is discarded&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that we have to cast to <code>List[KeyedMessage[K, V]]</code> to pass the static type check depite the fact that during run-time, JVM actually sees <code>ms.asInstanceOf[List[_]]</code>. Nevertheless, by filtering out unwanted types in the case clause, the cast would always happily succeed.</p>
+
+<p>That&rsquo;s pretty much it. We have seen how <strong>type erasure</strong> steps in the way when embedding a Kafka producer in an actor. A solution of using <code>TypeTag[T]</code> is demonstrated. This technique of course can be used elsewhere to improve type safety.</p>
+
+<p>-</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[Translate and override val/var/def]]></title>
     <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
-    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
+    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
@@ -26,15 +238,19 @@
 
 <p>For traits</p>
 
-<pre><code>* private variables are replaced by ones with names "mangled"; protected varibles are spared
-* getters and setters are generated
-* "initializers" are generated
-</code></pre>
+<ul>
+<li>private variables are replaced by ones with names &ldquo;mangled&rdquo;; protected varibles are spared</li>
+<li>getters and setters are generated</li>
+<li>&ldquo;initializers&rdquo; are generated</li>
+</ul>
+
 
 <p>For classes</p>
 
-<pre><code>* getters and setters are generated
-</code></pre>
+<ul>
+<li>getters and setters are generated</li>
+</ul>
+
 
 <p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
 
@@ -239,7 +455,9 @@
 
 <p>If <strong>val/var</strong> are newly declared in a class rather than a trait, the corresponding getters and setters. Nevertheless, no name mangling and no initializers.</p>
 
-<h2>-</h2>
+<p>-</p>
+
+<hr />
 
 <h1>Override between val/var/def</h1>
 
@@ -339,7 +557,17 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&ndash;</p>
+<p>-</p>
+
+<hr />
+
+<h1>val/var/def with different access modifiers</h1>
+
+<p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect or package privte. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
+
+<p>-</p>
+
+<hr />
 ]]></content>
   </entry>
   

@@ -36,7 +36,7 @@
 
 	<div id="content" class="inner"><article class="post">
 	<h2 class="title">Translate and Override Val/var/def</h2>
-	<div class="entry-content"><p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
+	<div class="entry-content"><p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
@@ -44,15 +44,19 @@
 
 <p>For traits</p>
 
-<pre><code>* private variables are replaced by ones with names "mangled"; protected varibles are spared
-* getters and setters are generated
-* "initializers" are generated
-</code></pre>
+<ul>
+<li>private variables are replaced by ones with names &ldquo;mangled&rdquo;; protected varibles are spared</li>
+<li>getters and setters are generated</li>
+<li>&ldquo;initializers&rdquo; are generated</li>
+</ul>
+
 
 <p>For classes</p>
 
-<pre><code>* getters and setters are generated
-</code></pre>
+<ul>
+<li>getters and setters are generated</li>
+</ul>
+
 
 <p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
 
@@ -257,7 +261,9 @@
 
 <p>If <strong>val/var</strong> are newly declared in a class rather than a trait, the corresponding getters and setters. Nevertheless, no name mangling and no initializers.</p>
 
-<h2>-</h2>
+<p>-</p>
+
+<hr />
 
 <h1>Override between val/var/def</h1>
 
@@ -357,7 +363,17 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&ndash;</p>
+<p>-</p>
+
+<hr />
+
+<h1>val/var/def with different access modifiers</h1>
+
+<p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect or package privte. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
+
+<p>-</p>
+
+<hr />
 </div>
 
 

@@ -7,7 +7,7 @@
 
 	<meta name="author" content="cfchou"> 
 	
-	<meta name="description" content="val/var/def are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps &hellip;"> <meta name="keywords" content="">
+	<meta name="description" content="Producer as an Actor In one of my toy projects, I use an Akka Actor to encapsulate a Kafka Producer. The benefit is twofold. First, it&rsquo;s &hellip;"> <meta name="keywords" content="">
 
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -40,12 +40,58 @@
     <article class="post">
 	<h2 class="title">
 		
+		<a href="/blog/2015/02/24/pattern-matching-for-type-erasure/">
+		
+			Pattern Matching for Type Erasure</a>
+	</h2>
+	<div class="entry-content">
+		<h1>Producer as an Actor</h1>
+
+<p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
+
+
+		
+		<a href="/blog/2015/02/24/pattern-matching-for-type-erasure/" class="more-link">Read on &rarr;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2015-02-24T12:55:39+08:00" pubdate data-updated="true">Feb 24th, 2015</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/akka/'>akka</a>, <a class='category' href='/blog/categories/generics/'>generics</a>, <a class='category' href='/blog/categories/kafka/'>kafka</a>, <a class='category' href='/blog/categories/scala/'>scala</a>, <a class='category' href='/blog/categories/type-erasure/'>type erasure</a>
+
+</div>
+
+
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
 		<a href="/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/">
 		
 			Translate and Override Val/var/def</a>
 	</h2>
 	<div class="entry-content">
-		<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how scalac translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
+		<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 
@@ -53,15 +99,19 @@
 
 <p>For traits</p>
 
-<pre><code>* private variables are replaced by ones with names "mangled"; protected varibles are spared
-* getters and setters are generated
-* "initializers" are generated
-</code></pre>
+<ul>
+<li>private variables are replaced by ones with names &ldquo;mangled&rdquo;; protected varibles are spared</li>
+<li>getters and setters are generated</li>
+<li>&ldquo;initializers&rdquo; are generated</li>
+</ul>
+
 
 <p>For classes</p>
 
-<pre><code>* getters and setters are generated
-</code></pre>
+<ul>
+<li>getters and setters are generated</li>
+</ul>
+
 
 <p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
 
