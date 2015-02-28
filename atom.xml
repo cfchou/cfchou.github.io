@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-28T20:52:56+08:00</updated>
+  <updated>2015-02-28T20:59:41+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -563,7 +563,7 @@
 
 <h1>val/var/def with different access modifiers</h1>
 
-<p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect or package privte. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
+<p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect, package private, etc.. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
 
 <p>-</p>
 
