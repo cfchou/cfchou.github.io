@@ -252,7 +252,7 @@
 
 <p>Note that we have to cast to <code>List[KeyedMessage[K, V]]</code> to pass the static type check depite the fact that during run-time, JVM actually sees <code>ms.asInstanceOf[List[_]]</code>. Nevertheless, by filtering out unwanted types in the case clause, the cast would always happily succeed.</p>
 
-<p>That&rsquo;s pretty much it. We have seen how <strong>type erasure</strong> steps in the way when embedding a Kafka producer in an actor. A solution of using <code>TypeTag[T]</code> is demonstrated. This technique of course can be used elsewhere to improve type safety.</p>
+<p>That&rsquo;s pretty much it. We have seen how <strong>type erasure</strong> steps in the way when pattern matching generic types. A solution of using <code>TypeTag[T]</code> is demonstrated. This technique of course can be used elsewhere to improve type safety.</p>
 
 <p>-</p>
 </div>
@@ -282,8 +282,19 @@
 </div>
 
 
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://cfchou.github.io">Comments</a>
+        
 </div>
 </article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
 </div>
 	<footer id="footer" class="inner">Copyright &copy; 2015
  cfchou 
@@ -291,6 +302,50 @@
 Powered by Octopress.
 </footer>
 	
+
+<script type="text/javascript">
+      var disqus_shortname = 'cfchou';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure/';
+        var disqus_url = 'http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
 
 </body>
 </html>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: type erasure | Been there, done that]]></title>
   <link href="http://cfchou.github.io/blog/categories/type-erasure/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-02-28T20:59:41+08:00</updated>
+  <updated>2015-03-01T12:14:32+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -245,7 +245,7 @@ case class ListMsg<a href="ms:%20List[U],%20tag:%20TypeTag[U]">U</a></p>
 <code>``
 Note that we have to cast to</code>List[KeyedMessage[K, V]]<code>to pass the static type check depite the fact that during run-time, JVM actually sees</code>ms.asInstanceOf[List[</em>]]`. Nevertheless, by filtering out unwanted types in the case clause, the cast would always happily succeed.</p>
 
-<p>That&rsquo;s pretty much it. We have seen how <strong>type erasure</strong> steps in the way when embedding a Kafka producer in an actor. A solution of using <code>TypeTag[T]</code> is demonstrated. This technique of course can be used elsewhere to improve type safety.</p>
+<p>That&rsquo;s pretty much it. We have seen how <strong>type erasure</strong> steps in the way when pattern matching generic types. A solution of using <code>TypeTag[T]</code> is demonstrated. This technique of course can be used elsewhere to improve type safety.</p>
 
 <p>-</p>
 ]]></content>
