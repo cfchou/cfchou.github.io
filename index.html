@@ -68,13 +68,13 @@
 
 <p>While Kafka&rsquo;s producer API is fairly straightforward, the consmer API is another story. There are two flavours of consumer API: <strong>high level</strong> and <strong>simple</strong>. The former, as its name suggests, provides a high level abstraction(<strong>Consumer Group</strong>) and just does the job(consuming messages). The latter, despite its name, is not simple at all and requires significant efforts to make it behave correctly. Lately, I have a chance to play with the simple API and feel there&rsquo;s something worth notice.</p>
 
-<p>The general advise is to use the <strong>high level API</strong> whenever it&rsquo;s possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) is also managed for us.</p>
+<p>The general advise is to use the <strong>high level API</strong> whenever it&rsquo;s possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
 
-<p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular point. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> chimes in.</p>
+<p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular time/offset. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> to chime in.</p>
 
-<p>Kafka develoers have kindly provided sample code for both kinds of API on the project wiki<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">1</a><a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">2</a>. The samples are explained in detail. With very little(if at all) modification, we can see them run with the newest release(0.8.2.1) of Kafka.</p>
+<p>Kafka develoers have kindly provided sample code for both kinds of API on the project wiki<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">1</a><a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">2</a>. The samples are explained in detail. With very little, if at all, modification, we can see them run with the newest release(0.8.2.1) of Kafka.</p>
 
-<p>However, in the sample code for simple consumer API, the section that queries message offsets deserves further explanation.</p>
+<p>However, in the sample code for simple consumer API, the section that queries message offsets deserves a further explanation.</p>
 
 <h3>OffsetRequest</h3>
 
@@ -117,7 +117,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>The following scala code pretty much does the same thing. I&rsquo;ll continue with scala code as it shares a similarity to java one. Moreover, Kafka internally is written in scala.</p>
+<p>The following scala code pretty much does the same thing. I&rsquo;ll continue with scala code as Kafka internally is written in scala.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -161,7 +161,7 @@
 
 <p>Does setting <code>maxNumOffset</code> to anything larger than 1 give us more message offsets before the given time? To answer the question we can dive into Kafka&rsquo;s source code. Before that, let us see how Kafka stores messages for a partition.</p>
 
-<p>Generally speaking, we have a big log to store messages for each partition. In reality, the big log is divided into several log segments and stored in different files. The default value of a segment is 1 GB but that can be configured:</p>
+<p>Generally speaking, we have a big write-ahead log to store messages for each partition. In reality, the big log is divided into several log segments and stored in different files. The default value of a segment is 1 GB but it can be configured:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -267,7 +267,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>In function <code>fetchOffsetsBefore</code>, <code>segsArray: Array[LogSegment]</code> refers to all log segments for this partition. Whenever the log grows over the configured size, the number of log segments/files increases by 1, so does <code>segsArray</code>.</p>
+<p>In this function, <code>segsArray: Array[LogSegment]</code> refers to all log segments for this partition. Whenever the log grows over the configured size, the number of log segments/files increases by 1, so does <code>segsArray</code>.</p>
 
 <p><code>segsArray</code> first gets mapped to <code>offsetTimeArray: Array[(Long, Long)]</code>:</p>
 
@@ -352,7 +352,7 @@
 
 <p><img src="/images/post/offsetrequest3.png" alt="map log segements to offsetTimeArray" /></p>
 
-<p>From the figure,</p>
+<p>From the figure, assume <code>maxNumOffsets == 1</code>,</p>
 
 <ol>
 <li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now)</code> and return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
@@ -391,7 +391,7 @@
 
 <p>That&rsquo;s it. To conclude, <strong>the offsets we get, will be either the offsets to the first messages in log segments or the offset to the latest message on the partition</strong>.</p>
 
-<p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than one for the time being.</p>
+<p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than 1 for the time being.</p>
 
 		
 		
