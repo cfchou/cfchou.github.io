@@ -1,0 +1,3 @@
+[submodule ".themes/cleanerpress"]
+	path = .themes/cleanerpress
+	url = https://github.com/pera/cleanerpress.git
