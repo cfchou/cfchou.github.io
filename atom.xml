@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-03-01T12:14:32+08:00</updated>
+  <updated>2015-04-24T12:41:49+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -12,6 +12,346 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[A Closer Look at Kafka OffsetRequest]]></title>
+    <link href="http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/"/>
+    <updated>2015-04-23T12:04:59+08:00</updated>
+    <id>http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest</id>
+    <content type="html"><![CDATA[<h3>TL;NR</h3>
+
+<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
+
+<h3>High Level and Simple Consumer API</h3>
+
+<p>While Kafka&rsquo;s producer API is fairly straightforward, the consmer API is another story. There are two flavours of consumer API: <strong>high level</strong> and <strong>simple</strong>. The former, as its name suggests, provides a high level abstraction(<strong>Consumer Group</strong>) and just does the job(consuming messages). The latter, despite its name, is not simple at all and requires significant efforts to make it behave correctly. Lately, I have a chance to play with the simple API and feel there&rsquo;s something worth notice.</p>
+
+<p>The general advise is to use the <strong>high level API</strong> whenever it&rsquo;s possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) is also managed for us.</p>
+
+<p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular point. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> chimes in.</p>
+
+<p>Kafka develoers have kindly provided sample code for both kinds of API on the project wiki<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">1</a><a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">2</a>. The samples are explained in detail. With very little(if at all) modification, we can see them run with the newest release(0.8.2.1) of Kafka.</p>
+
+<p>However, in the sample code for simple consumer API, the section that queries message offsets deserves further explanation.</p>
+
+<h3>OffsetRequest</h3>
+
+<p>To start, we prepare OffsetRequest(the API allows us to query multiple partitions across different topics at once. For expediency&rsquo;s sake we stick to only one partition):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">// The partition of topic that we will query for</span>
+</span><span class='line'><span class="n">TopicAndPartition</span> <span class="n">topicAndPartition</span> <span class="o">=</span>
+</span><span class='line'>  <span class="k">new</span> <span class="nf">TopicAndPartition</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">partition</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Map</span><span class="o">&lt;</span><span class="n">TopicAndPartition</span><span class="o">,</span> <span class="n">PartitionOffsetRequestInfo</span><span class="o">&gt;</span> <span class="n">requestInfo</span> <span class="o">=</span>
+</span><span class='line'>  <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">TopicAndPartition</span><span class="o">,</span> <span class="n">PartitionOffsetRequestInfo</span><span class="o">&gt;();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// whichTime??? 1???</span>
+</span><span class='line'><span class="n">requestInfo</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">topicAndPartition</span><span class="o">,</span>
+</span><span class='line'>  <span class="k">new</span> <span class="nf">PartitionOffsetRequestInfo</span><span class="o">(</span><span class="n">whichTime</span><span class="o">,</span> <span class="mi">1</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">kafka</span><span class="o">.</span><span class="na">javaapi</span><span class="o">.</span><span class="na">OffsetRequest</span> <span class="n">request</span> <span class="o">=</span>
+</span><span class='line'>  <span class="k">new</span> <span class="n">kafka</span><span class="o">.</span><span class="na">javaapi</span><span class="o">.</span><span class="na">OffsetRequest</span><span class="o">(</span><span class="n">requestInfo</span><span class="o">,</span>
+</span><span class='line'>    <span class="n">kafka</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">OffsetRequest</span><span class="o">.</span><span class="na">CurrentVersion</span><span class="o">(),</span><span class="n">clientName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">OffsetResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">getOffsetsBefore</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+</span><span class='line'><span class="o">...</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The following scala code pretty much does the same thing. I&rsquo;ll continue with scala code as it shares a similarity to java one. Moreover, Kafka internally is written in scala.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="c1">// The partition of topic that we will query for</span>
+</span><span class='line'><span class="k">val</span> <span class="n">part</span> <span class="k">=</span> <span class="nc">TopicAndPartition</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">partitionId</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// whichTime??? 1???</span>
+</span><span class='line'><span class="k">val</span> <span class="n">info</span> <span class="k">=</span> <span class="nc">PartitionOffsetRequestInfo</span><span class="o">(</span><span class="n">whichTime</span><span class="o">,</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">infoMap</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="n">part</span> <span class="o">-&gt;</span> <span class="n">info</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">request</span> <span class="k">=</span> <span class="nc">OffsetRequest</span><span class="o">(</span><span class="n">info</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">response</span> <span class="k">=</span> <span class="n">consumer</span><span class="o">.</span><span class="n">getOffsetsBefore</span><span class="o">(</span><span class="n">request</span><span class="o">)</span>
+</span><span class='line'><span class="o">...</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&rsquo;s take a look at <code>PartitionOffsetRequestInfo</code>, it supplies a query criterion for the corresponding partition. <code>time</code> can be a unix timestamp or either one of the two special constants:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">case</span> <span class="k">class</span> <span class="nc">PartitionOffsetRequestInfo</span><span class="o">(</span><span class="n">time</span><span class="k">:</span> <span class="kt">Long</span><span class="o">,</span> <span class="n">maxNumOffsets</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">kafka</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">EarliestTime</span><span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+</span><span class='line'><span class="k">val</span> <span class="n">kafka</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">LatestTime</span><span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Does setting <code>maxNumOffset</code> to anything larger than 1 give us more message offsets before the given time? To answer the question we can dive into Kafka&rsquo;s source code. Before that, let us see how Kafka stores messages for a partition.</p>
+
+<p>Generally speaking, we have a big log to store messages for each partition. In reality, the big log is divided into several log segments and stored in different files. The default value of a segment is 1 GB but that can be configured:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="c1">// server.properties</span>
+</span><span class='line'><span class="k">#</span> <span class="nc">The</span> <span class="n">maximum</span> <span class="n">size</span> <span class="n">of</span> <span class="n">a</span> <span class="n">log</span> <span class="n">segment</span> <span class="n">file</span><span class="o">.</span> <span class="nc">When</span> <span class="k">this</span> <span class="n">size</span> <span class="n">is</span> <span class="n">reached</span> <span class="n">a</span> <span class="k">new</span> <span class="n">log</span> <span class="n">segment</span> <span class="n">will</span> <span class="n">be</span> <span class="n">created</span><span class="o">.</span>
+</span><span class='line'><span class="k">#</span><span class="n">log</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">bytes</span><span class="k">=</span><span class="mi">1073741824</span> <span class="k">#</span> <span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span> <span class="k">=</span> <span class="mi">1073741824</span> <span class="k">=</span> <span class="mi">1</span><span class="n">G</span>
+</span><span class='line'><span class="n">log</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">bytes</span><span class="k">=</span><span class="mi">65536</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here I change it to 64 KB for testing. <strong>WARNING:</strong> change in segment size would remove the existing log(hence messages are lost).</p>
+
+<p><img src="http://cfchou.github.io/images/post/logsegments.png" alt="log files on my machine" /></p>
+
+<h3>fetchOffsetsBefore</h3>
+
+<p>Now we move on to see how offset requests are processed. Eventually, a request is dealt by <code>fetchOffsetBefore</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="c1">// scala/kafka/server/KafkaApis.scala</span>
+</span><span class='line'><span class="k">def</span> <span class="n">fetchOffsetsBefore</span><span class="o">(</span><span class="n">log</span><span class="k">:</span> <span class="kt">Log</span><span class="o">,</span> <span class="n">timestamp</span><span class="k">:</span> <span class="kt">Long</span><span class="o">,</span> <span class="n">maxNumOffsets</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Long</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">segsArray</span> <span class="k">=</span> <span class="n">log</span><span class="o">.</span><span class="n">logSegments</span><span class="o">.</span><span class="n">toArray</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">offsetTimeArray</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[(</span><span class="kt">Long</span>, <span class="kt">Long</span><span class="o">)]</span> <span class="k">=</span> <span class="kc">null</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">segsArray</span><span class="o">.</span><span class="n">last</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">offsetTimeArray</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Array</span><span class="o">[(</span><span class="kt">Long</span>, <span class="kt">Long</span><span class="o">)](</span><span class="n">segsArray</span><span class="o">.</span><span class="n">length</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="n">offsetTimeArray</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Array</span><span class="o">[(</span><span class="kt">Long</span>, <span class="kt">Long</span><span class="o">)](</span><span class="n">segsArray</span><span class="o">.</span><span class="n">length</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span><span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">0</span> <span class="n">until</span> <span class="n">segsArray</span><span class="o">.</span><span class="n">length</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">segsArray</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="n">baseOffset</span><span class="o">,</span> <span class="n">segsArray</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="n">lastModified</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">segsArray</span><span class="o">.</span><span class="n">last</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">segsArray</span><span class="o">.</span><span class="n">length</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">log</span><span class="o">.</span><span class="n">logEndOffset</span><span class="o">,</span> <span class="nc">SystemTime</span><span class="o">.</span><span class="n">milliseconds</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">startIndex</span> <span class="k">=</span> <span class="o">-</span><span class="mi">1</span>
+</span><span class='line'>    <span class="n">timestamp</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">LatestTime</span> <span class="k">=&gt;</span>
+</span><span class='line'>        <span class="n">startIndex</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="k">case</span> <span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">EarliestTime</span> <span class="k">=&gt;</span>
+</span><span class='line'>        <span class="n">startIndex</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+</span><span class='line'>        <span class="k">var</span> <span class="n">isFound</span> <span class="k">=</span> <span class="kc">false</span>
+</span><span class='line'>        <span class="n">debug</span><span class="o">(</span><span class="s">&quot;Offset time array = &quot;</span> <span class="o">+</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">o</span> <span class="k">=&gt;</span> <span class="s">&quot;%d, %d&quot;</span><span class="o">.</span><span class="n">format</span><span class="o">(</span><span class="n">o</span><span class="o">.</span><span class="n">_1</span><span class="o">,</span> <span class="n">o</span><span class="o">.</span><span class="n">_2</span><span class="o">)))</span>
+</span><span class='line'>        <span class="n">startIndex</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>        <span class="k">while</span> <span class="o">(</span><span class="n">startIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isFound</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">startIndex</span><span class="o">).</span><span class="n">_2</span> <span class="o">&lt;=</span> <span class="n">timestamp</span><span class="o">)</span>
+</span><span class='line'>            <span class="n">isFound</span> <span class="k">=</span> <span class="kc">true</span>
+</span><span class='line'>          <span class="k">else</span>
+</span><span class='line'>            <span class="n">startIndex</span> <span class="o">-=</span><span class="mi">1</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">val</span> <span class="n">retSize</span> <span class="k">=</span> <span class="n">maxNumOffsets</span><span class="o">.</span><span class="n">min</span><span class="o">(</span><span class="n">startIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">ret</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Array</span><span class="o">[</span><span class="kt">Long</span><span class="o">](</span><span class="n">retSize</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">for</span><span class="o">(</span><span class="n">j</span> <span class="k">&lt;-</span> <span class="mi">0</span> <span class="n">until</span> <span class="n">retSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">ret</span><span class="o">(</span><span class="n">j</span><span class="o">)</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">startIndex</span><span class="o">).</span><span class="n">_1</span>
+</span><span class='line'>      <span class="n">startIndex</span> <span class="o">-=</span> <span class="mi">1</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="c1">// ensure that the returned seq is in descending order of offsets</span>
+</span><span class='line'>    <span class="n">ret</span><span class="o">.</span><span class="n">toSeq</span><span class="o">.</span><span class="n">sortBy</span><span class="o">(-</span> <span class="k">_</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In function <code>fetchOffsetsBefore</code>, <code>segsArray: Array[LogSegment]</code> refers to all log segments for this partition. Whenever the log grows over the configured size, the number of log segments/files increases by 1, so does <code>segsArray</code>.</p>
+
+<p><code>segsArray</code> first gets mapped to <code>offsetTimeArray: Array[(Long, Long)]</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">for</span><span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">0</span> <span class="n">until</span> <span class="n">segsArray</span><span class="o">.</span><span class="n">length</span><span class="o">)</span>
+</span><span class='line'>  <span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">segsArray</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="n">baseOffset</span><span class="o">,</span>
+</span><span class='line'>                        <span class="n">segsArray</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="n">lastModified</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>baseOffset</code> is the offset of the first message(in the previous segment) in this segemnt <code>i</code>.
+<code>lastModified</code> is the timestamp of the latest message in this segment <code>i</code>.</p>
+
+<p><img src="http://cfchou.github.io/images/post/offsetrequest1.png" alt="map log segements to offsetTimeArray" /></p>
+
+<p>In the picture, we see the first segment reaches the configured size and new messages are appended to the second segment.</p>
+
+<ul>
+<li>Tuple <code>offsetTimeArray(0)</code> contains the <strong>offset to the first message</strong> in the first segement and the <strong>timestamp of the last</strong> message in the the first segment.</li>
+<li>Tuple <code>offsetTimeArray(1)</code> contains the <strong>offset to the first message</strong> in the second segement and the <strong>timestamp of the latest</strong> message in the the second segment.</li>
+</ul>
+
+
+<p>Then, a padding element is added to <code>offsetTimeArray</code>, which contains the <strong>offset to the latest message</strong> and <strong>the current time</strong>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">segsArray</span><span class="o">.</span><span class="n">length</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">log</span><span class="o">.</span><span class="n">logEndOffset</span><span class="o">,</span>
+</span><span class='line'>                                   <span class="nc">SystemTime</span><span class="o">.</span><span class="n">milliseconds</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://cfchou.github.io/images/post/offsetrequest2.png" alt="map log segements to offsetTimeArray" /></p>
+
+<p>Next, it tries to find the <code>startIndex</code> of <code>offsetTimeArray</code>.</p>
+
+<ol>
+<li>If <code>timestamp == LatestTime</code>, we gets the last index(of the padding element).</li>
+<li>If <code>timestamp == EarliestTime</code>, we get 0.</li>
+<li>Otherwise, search backward to find the first element which latest message happened before <code>timestamp</code>.</li>
+</ol>
+
+
+<p>The offset of the first message in the selected log segment will be returned.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">timestamp</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">case</span> <span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">LatestTime</span> <span class="k">=&gt;</span>
+</span><span class='line'>    <span class="n">startIndex</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>  <span class="k">case</span> <span class="nc">OffsetRequest</span><span class="o">.</span><span class="nc">EarliestTime</span> <span class="k">=&gt;</span>
+</span><span class='line'>    <span class="n">startIndex</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>  <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">isFound</span> <span class="k">=</span> <span class="kc">false</span>
+</span><span class='line'>    <span class="n">debug</span><span class="o">(</span><span class="s">&quot;Offset time array = &quot;</span> <span class="o">+</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">o</span> <span class="k">=&gt;</span> <span class="s">&quot;%d, %d&quot;</span><span class="o">.</span><span class="n">format</span><span class="o">(</span><span class="n">o</span><span class="o">.</span><span class="n">_1</span><span class="o">,</span> <span class="n">o</span><span class="o">.</span><span class="n">_2</span><span class="o">)))</span>
+</span><span class='line'>    <span class="n">startIndex</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">startIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isFound</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">startIndex</span><span class="o">).</span><span class="n">_2</span> <span class="o">&lt;=</span> <span class="n">timestamp</span><span class="o">)</span>
+</span><span class='line'>        <span class="n">isFound</span> <span class="k">=</span> <span class="kc">true</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">startIndex</span> <span class="o">-=</span><span class="mi">1</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://cfchou.github.io/images/post/offsetrequest3.png" alt="map log segements to offsetTimeArray" /></p>
+
+<p>From the figure,</p>
+
+<ol>
+<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now)</code> and return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
+<li><p>If <code>timestamp == EarliestTime</code>, we get <code>(0, t1)</code> and return <code>[0]</code> which is the offset to the first messsage in the partition.</p></li>
+<li><p>If <code>timestamp == T1</code>, we get <code>(0, t1)</code> and return <code>[0]</code>. Note that <code>T1 &lt; t2</code>.</p></li>
+<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2)</code> and return <code>[7]</code>.</p></li>
+</ol>
+
+
+<p>Finally, we are going to see what <code>maxNumOffsets</code> is for. If we&rsquo;re interrested more than one element(log segment), we get a chance to ask more offsets to the first messages in previous segments.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">val</span> <span class="n">retSize</span> <span class="k">=</span> <span class="n">maxNumOffsets</span><span class="o">.</span><span class="n">min</span><span class="o">(</span><span class="n">startIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'><span class="k">val</span> <span class="n">ret</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Array</span><span class="o">[</span><span class="kt">Long</span><span class="o">](</span><span class="n">retSize</span><span class="o">)</span>
+</span><span class='line'><span class="k">for</span><span class="o">(</span><span class="n">j</span> <span class="k">&lt;-</span> <span class="mi">0</span> <span class="n">until</span> <span class="n">retSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">ret</span><span class="o">(</span><span class="n">j</span><span class="o">)</span> <span class="k">=</span> <span class="n">offsetTimeArray</span><span class="o">(</span><span class="n">startIndex</span><span class="o">).</span><span class="n">_1</span>
+</span><span class='line'>  <span class="n">startIndex</span> <span class="o">-=</span> <span class="mi">1</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Say if <code>maxNumOffsets == 2</code>, then:</p>
+
+<ol>
+<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now), (7, t2)</code> and return <code>[8, 7]</code>.</p></li>
+<li><p>If <code>timestamp == EarliestTime</code>, we only get <code>(0, t1)</code> and return <code>[0]</code>.</p></li>
+<li><p>If <code>timestamp == T1</code>, we only get <code>(0, t1)</code> and return <code>[0]</code>.</p></li>
+<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2), (0, t1)</code> and return <code>[7, 0]</code>.</p></li>
+</ol>
+
+
+<p>That&rsquo;s it. To conclude, <strong>the offsets we get, will be either the offsets to the first messages in log segments or the offset to the latest message on the partition</strong>.</p>
+
+<p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than one for the time being.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Pattern Matching for Type Erasure]]></title>
@@ -185,7 +525,7 @@
 <p>Likewise, JVM wouldn&rsquo;t know anything about the type parameters due to <strong>type erasure</strong>. The pattern is <code>List[_]</code> at run-time. Consequently, any <code>List[T]</code> would match. Unsurprisingly, we can enforce type safety by <code>TypeTag[T]</code>. Before we proceed, there are a few points worth noting.</p>
 
 <ol>
-<li><p>This piece of code would compile with a warning saying <strong>&ldquo;non-variable type argument KeyedMessage[K, V] in type pattern List[KeyedMessage[K, V]] is unchecked since it is eliminated by erasure&rdquo;</strong>. Such warnings rise because according to <a href="http://www.angelikalanger.com/GenericsFAQ/FAQSections/TechnicalDetails.html#FAQ001">Java Generics FAQ</a>, <strong>&ldquo;unchecked&rdquo; warnings are reported when the compiler finds a cast whose target type is either a parameterized type or a type parameter.</strong> However, why didn&rsquo;t we see any warning previously when we delt with <code>case m: KeyedMessage[K, V]</code>? Well, it is probably a bug and is addressed by <a href="https://issues.scala-lang.org/browse/SI-9188">SI-9188</a>.</p></li>
+<li><p>This piece of code would compile with a warning saying <strong>&ldquo;non-variable type argument KeyedMessage[K, V] in type pattern List[KeyedMessage[K, V]] is unchecked since it is eliminated by erasure&rdquo;</strong>. Such warning rises because according to <a href="http://www.angelikalanger.com/GenericsFAQ/FAQSections/TechnicalDetails.html#FAQ001">Java Generics FAQ</a>, <strong>&ldquo;unchecked&rdquo; warnings are reported when the compiler finds a cast whose target type is either a parameterized type or a type parameter.</strong> However, why didn&rsquo;t we see any warning previously when we delt with <code>case m: KeyedMessage[K, V]</code>? Well, it is probably a bug and is addressed by <a href="https://issues.scala-lang.org/browse/SI-9188">SI-9188</a>.</p></li>
 <li><p>We wouldn&rsquo;t discuss it at length but actually <a href="http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html">there are different types of TypeTag</a>. <code>TypeTag[T]</code> is deliberately chosen since it is the strongest in the sense that it would retained type information for all nested type parameters.</p></li>
 </ol>
 
@@ -230,7 +570,7 @@
     <link href="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/"/>
     <updated>2015-02-17T16:24:40+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
-    <content type="html"><![CDATA[<p><strong>val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
+    <content type="html"><![CDATA[<p><strong>Val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
 <h1>Translate val/var/def to java</h1>
 

@@ -3,11 +3,11 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>cfchou.github.io  | Been there, done that</title>
+	<title>A Closer Look at Kafka OffsetRequest  | Been there, done that</title>
 
 	<meta name="author" content="cfchou"> 
 	
-	<meta name="description" content="TL;NR When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to &hellip;"> <meta name="keywords" content="">
+	<meta name="description" content="TL;NR When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the &hellip;"> <meta name="keywords" content="">
 
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -49,18 +49,9 @@
 
 </header>
 
-	<div id="content" class="inner">
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/">
-		
-			A Closer Look at Kafka OffsetRequest</a>
-	</h2>
-	<div class="entry-content">
-		<h3>TL;NR</h3>
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">A Closer Look at Kafka OffsetRequest</h2>
+	<div class="entry-content"><h3>TL;NR</h3>
 
 <p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
 
@@ -392,10 +383,7 @@
 <p>That&rsquo;s it. To conclude, <strong>the offsets we get, will be either the offsets to the first messages in log segments or the offset to the latest message on the partition</strong>.</p>
 
 <p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than one for the time being.</p>
-
-		
-		
-	</div>
+</div>
 
 
 <div class="meta">
@@ -423,134 +411,17 @@
 
 
         
-           | <a href="/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/#disqus_thread"
-             data-disqus-identifier="http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/">Comments</a>
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://cfchou.github.io">Comments</a>
         
 </div>
 </article>
 
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/2015/02/24/pattern-matching-for-type-erasure/">
-		
-			Pattern Matching for Type Erasure</a>
-	</h2>
-	<div class="entry-content">
-		<h1>Producer as an Actor</h1>
-
-<p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
-
-
-		
-		<a href="/blog/2015/02/24/pattern-matching-for-type-erasure/" class="more-link">Read on &rarr;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-
-<time datetime="2015-02-24T12:55:39+08:00" pubdate data-updated="true">Feb 24th, 2015</time></div>
-	
-
-<div class="tags">
-
-	<a class='category' href='/blog/categories/akka/'>akka</a>, <a class='category' href='/blog/categories/generics/'>generics</a>, <a class='category' href='/blog/categories/kafka/'>kafka</a>, <a class='category' href='/blog/categories/scala/'>scala</a>, <a class='category' href='/blog/categories/type-erasure/'>type erasure</a>
-
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 </div>
-
-
-        
-           | <a href="/blog/2015/02/24/pattern-matching-for-type-erasure/#disqus_thread"
-             data-disqus-identifier="http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure/">Comments</a>
-        
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/">
-		
-			Translate and Override Val/var/def</a>
-	</h2>
-	<div class="entry-content">
-		<p><strong>Val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
-
-<h1>Translate val/var/def to java</h1>
-
-<p>There are a few simple rules to translate val/var/def from scala to java.</p>
-
-<p>For traits</p>
-
-<ul>
-<li>private variables are replaced by ones with names &ldquo;mangled&rdquo;; protected varibles are spared</li>
-<li>getters and setters are generated</li>
-<li>&ldquo;initializers&rdquo; are generated</li>
-</ul>
-
-
-<p>For classes</p>
-
-<ul>
-<li>getters and setters are generated</li>
-</ul>
-
-
-<p>Note that terms like &ldquo;translate&rdquo;, &ldquo;mangle&rdquo; and &ldquo;initializer&rdquo; are used here for the ease of understanding. I don&rsquo;t think they are common jargon in Scala community.</p>
-
-<p>Now let&rsquo;s look at an example:</p>
-
-
-		
-		<a href="/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/" class="more-link">Read on &rarr;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-
-<time datetime="2015-02-17T16:24:40+08:00" pubdate data-updated="true">Feb 17th, 2015</time></div>
-	
-
-<div class="tags">
-
-	<a class='category' href='/blog/categories/scala/'>scala</a>
-
-</div>
-
-
-        
-           | <a href="/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/#disqus_thread"
-             data-disqus-identifier="http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def/">Comments</a>
-        
-</div>
-</article>
-
+  </section>
 
 </div>
 	<footer id="footer" class="inner">Copyright &copy; 2015
@@ -564,7 +435,10 @@ Powered by Octopress.
       var disqus_shortname = 'cfchou';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/';
+        var disqus_url = 'http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest/';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
