@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-04-24T13:03:32+08:00</updated>
+  <updated>2015-04-24T13:05:05+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -21,6 +21,9 @@
     <content type="html"><![CDATA[<h3>TL;NR</h3>
 
 <p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
+
+<!-- more -->
+
 
 <h3>High Level and Simple Consumer API</h3>
 

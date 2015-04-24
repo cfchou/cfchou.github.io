@@ -55,6 +55,9 @@
 
 <p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
 
+<!-- more -->
+
+
 <h3>High Level and Simple Consumer API</h3>
 
 <p>While Kafka&rsquo;s producer API is fairly straightforward, the consmer API is another story. There are two flavours of consumer API: <strong>high level</strong> and <strong>simple</strong>. The former, as its name suggests, provides a high level abstraction(<strong>Consumer Group</strong>) and just does the job(consuming messages). The latter, despite its name, is not simple at all and requires significant efforts to make it behave correctly. Lately, I have a chance to play with the simple API and feel there&rsquo;s something worth notice.</p>
