@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-04-25T11:49:10+08:00</updated>
+  <updated>2015-04-26T00:35:46+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -31,7 +31,7 @@
 
 <p>The general advise is to use the <strong>high level API</strong> whenever possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
 
-<p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular time/offset. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> to chime in.</p>
+<p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular time/offset. That&rsquo;s where the <strong>simple API</strong> to chime in.</p>
 
 <p>Kafka develoers have kindly provided sample code for both kinds of API on the project wiki<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">1</a><a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">2</a>. The samples are explained in detail. With very little, if at all, modification, we can see them run with the newest release(0.8.2.1) of Kafka.</p>
 
