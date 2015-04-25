@@ -62,7 +62,7 @@
 	<div class="entry-content">
 		<h3>TL;NR</h3>
 
-<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
+<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message of the whole partition.</p>
 
 
 		
@@ -110,7 +110,7 @@
 			Pattern Matching for Type Erasure</a>
 	</h2>
 	<div class="entry-content">
-		<h1>Producer as an Actor</h1>
+		<h3>Producer as an Actor</h3>
 
 <p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
 
@@ -162,7 +162,9 @@
 	<div class="entry-content">
 		<p><strong>Val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
-<h1>Translate val/var/def to java</h1>
+<p>-</p>
+
+<h3>Translate val/var/def to java</h3>
 
 <p>There are a few simple rules to translate val/var/def from scala to java.</p>
 

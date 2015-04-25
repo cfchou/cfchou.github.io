@@ -53,7 +53,7 @@
 	<h2 class="title">A Closer Look at Kafka OffsetRequest</h2>
 	<div class="entry-content"><h3>TL;NR</h3>
 
-<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
+<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message of the whole partition.</p>
 
 <!-- more -->
 
@@ -62,7 +62,7 @@
 
 <p>While Kafka&rsquo;s producer API is fairly straightforward, the consmer API is another story. There are two flavours of consumer API: <strong>high level</strong> and <strong>simple</strong>. The former, as its name suggests, provides a high level abstraction(<strong>Consumer Group</strong>) and just does the job(consuming messages). The latter, despite its name, is not simple at all and requires significant efforts to make it behave correctly. Lately, I have a chance to play with the simple API and feel there&rsquo;s something worth notice.</p>
 
-<p>The general advise is to use the <strong>high level API</strong> whenever it&rsquo;s possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
+<p>The general advise is to use the <strong>high level API</strong> whenever possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
 
 <p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular time/offset. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> to chime in.</p>
 

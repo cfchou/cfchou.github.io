@@ -51,14 +51,14 @@
 
 	<div id="content" class="inner"><article class="post">
 	<h2 class="title">Pattern Matching for Type Erasure</h2>
-	<div class="entry-content"><h1>Producer as an Actor</h1>
+	<div class="entry-content"><h3>Producer as an Actor</h3>
 
 <p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
 
 <!-- more -->
 
 
-<h1>Problems caused by Type Erasure</h1>
+<h3>Problems caused by Type Erasure</h3>
 
 <p><strong>Type erasure</strong> removes some type information of parameterized types. It is used to fill the gap between java generics and the legacy code written prior generics. Scala, while is subject to the fact that it is implemented in java, introduces a few mechanisms to get around type erasure.</p>
 
@@ -99,7 +99,7 @@
 
 <p>At the end of the day, JVM only knows <code>ProducerActor[_, _]</code> <code>KeyedMessage[_, _]</code> at run-time. Type information of the type parameters are not carried over from compile-time. Matching whatever instantiation of <code>KeyedMessage[X, Y]</code> to <code>KeyedMessage[_, _]</code> is unduly legal(though an unchecked warning should be issued, more on that later). In <code>TestApp</code>, the illegal <code>KeyedMessage[String, String]</code> will match the first clause. A run-time exception will be thrown because <code>producer.send</code> is expecting <code>KeyedMessage[Int, String]</code>.</p>
 
-<h1>Reification using TypeTag[T]</h1>
+<h3>Reification using TypeTag[T]</h3>
 
 <p>The solution, as <a href="https://groups.google.com/forum/#!topic/akka-user/7gd2Tfwax5Q">suggested by Roland Kuhn</a>, is to use <code>TypeTag[T]</code>. Basically, to make JVM aware of what <code>K, V</code> really are, a technique called <strong>type reification</strong> is needed. It&rsquo;s a behaviour that enough information is retained so that JVM knows what type parameters are during run-time. Scala&rsquo;s <code>TypeTag[T]</code> provides such functionality:</p>
 
@@ -161,7 +161,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<h1>Props Factory Pattern</h1>
+<h3>Props Factory Pattern</h3>
 
 <p>If we try to create a <code>ProducerActor</code> in this way:</p>
 
@@ -193,7 +193,7 @@
 
 <p>By doing so, we&rsquo;re assured that the compiler would generate the needed implicits for <code>Props</code> object right at the line of <code>actorOf</code>.</p>
 
-<h1>Reify List[KeyedMessage[K, V]]</h1>
+<h3>Reify List[KeyedMessage[K, V]]</h3>
 
 <p>Notice that <strong>Kafka</strong> <code>Producer</code>&rsquo;s <code>send</code> actually accepts <strong>vararg</strong>:</p>
 

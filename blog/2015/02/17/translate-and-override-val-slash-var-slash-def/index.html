@@ -53,7 +53,9 @@
 	<h2 class="title">Translate and Override Val/var/def</h2>
 	<div class="entry-content"><p><strong>Val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
-<h1>Translate val/var/def to java</h1>
+<p>-</p>
+
+<h3>Translate val/var/def to java</h3>
 
 <p>There are a few simple rules to translate val/var/def from scala to java.</p>
 
@@ -280,11 +282,13 @@
 
 <hr />
 
-<h1>Override between val/var/def</h1>
+<h3>Override between val/var/def</h3>
 
 <p>The other aspect of this topic is override rules. The rationale behind the rules normally can be obtained from applying <strong>Substitution Principle</strong>. It&rsquo;s the error messages that sometimes may cause confusion. We&rsquo;ll reason about the legality by <strong>Substitution Principle</strong> or by looking at the translated java code.</p>
 
-<h3>var/def can&rsquo;t override val</h3>
+<p>-</p>
+
+<h4>var/def can&rsquo;t override val</h4>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -307,7 +311,9 @@
 
 <p>It&rsquo;s because clients of A1 would always expect <code>a</code> to be immutable. That&rsquo;s the value would always be the same for every reads. Nevertheless, A2 would break the contract.</p>
 
-<h3>val/def can&rsquo;t override var</h3>
+<p>-</p>
+
+<h4>val/def can&rsquo;t override var</h4>
 
 <p>Firstly, <strong>val</strong> can&rsquo;t override <strong>var</strong>:</p>
 
@@ -336,11 +342,15 @@
 
 <p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is similar. Plus, the clients of A2 can&rsquo;t both read and write to <strong>def</strong> as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
 
-<h3>val can override def with no parameters</h3>
+<p>-</p>
+
+<h4>val can override def with no parameters</h4>
 
 <p>Think everyone&rsquo;s agreed.</p>
 
-<h3>var can&rsquo;t override def</h3>
+<p>-</p>
+
+<h4>var can&rsquo;t override def</h4>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -382,7 +392,7 @@
 
 <hr />
 
-<h1>val/var/def with different access modifiers</h1>
+<h3>val/var/def with different access modifiers</h3>
 
 <p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect, package private, etc.. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
 

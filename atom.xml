@@ -4,7 +4,7 @@
   <title><![CDATA[Been there, done that]]></title>
   <link href="http://cfchou.github.io/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-04-24T13:05:05+08:00</updated>
+  <updated>2015-04-25T10:59:44+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -20,7 +20,7 @@
     <id>http://cfchou.github.io/blog/2015/04/23/a-closer-look-at-kafka-offsetrequest</id>
     <content type="html"><![CDATA[<h3>TL;NR</h3>
 
-<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message on the partition.</p>
+<p>When using Kafka&rsquo;s simple consumer API to query offsets of messages in a given partition, the result we get are either the offsets to the first messages in log segments or the offset to the latest message of the whole partition.</p>
 
 <!-- more -->
 
@@ -29,7 +29,7 @@
 
 <p>While Kafka&rsquo;s producer API is fairly straightforward, the consmer API is another story. There are two flavours of consumer API: <strong>high level</strong> and <strong>simple</strong>. The former, as its name suggests, provides a high level abstraction(<strong>Consumer Group</strong>) and just does the job(consuming messages). The latter, despite its name, is not simple at all and requires significant efforts to make it behave correctly. Lately, I have a chance to play with the simple API and feel there&rsquo;s something worth notice.</p>
 
-<p>The general advise is to use the <strong>high level API</strong> whenever it&rsquo;s possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
+<p>The general advise is to use the <strong>high level API</strong> whenever possible. A typical scenario is that consumers just want to keep reading messages sent to the topic in question. High level API on behalf of us handles the nitty-gritty of communication to brokers and leaders, plus, the offsets(the points to which we have conumed messages) are also managed for us.</p>
 
 <p>Despite its convenience, there are many cases where the high level API doesn&rsquo;t cut. For example, re-reading messages from a particular time/offset. In addition, the fact that it would block the thread while there&rsquo;s nothing to read makes it difficult to use along with other concurrent constructs like Future and Actor. That&rsquo;s where the <strong>simple API</strong> to chime in.</p>
 
@@ -361,14 +361,14 @@
     <link href="http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure/"/>
     <updated>2015-02-24T12:55:39+08:00</updated>
     <id>http://cfchou.github.io/blog/2015/02/24/pattern-matching-for-type-erasure</id>
-    <content type="html"><![CDATA[<h1>Producer as an Actor</h1>
+    <content type="html"><![CDATA[<h3>Producer as an Actor</h3>
 
 <p>In one of my toy projects, I use an <strong>Akka</strong> <code>Actor</code> to encapsulate a <strong>Kafka</strong> <code>Producer</code>. The benefit is twofold. First, it&rsquo;s recommanded that <a href="http://kafka.apache.org/082/javadoc/index.html?org/apache/kafka/clients/producer/KafkaProducer.html">a producer should be shared among all threads for best performance</a>. Maintaining a seemingly long-lived actor/producer can be easily achieved thanks to <strong>Akka</strong>&rsquo;s <code>SupervisorStrategy</code>. Second, resources can be well managed by the hooks inserted in the life-cycle of the actor. However, indirectly asking producer to send messages of a parameterized type would sacrifice type safety due to <strong>type erasure</strong> as described bellow.</p>
 
 <!-- more -->
 
 
-<h1>Problems caused by Type Erasure</h1>
+<h3>Problems caused by Type Erasure</h3>
 
 <p><strong>Type erasure</strong> removes some type information of parameterized types. It is used to fill the gap between java generics and the legacy code written prior generics. Scala, while is subject to the fact that it is implemented in java, introduces a few mechanisms to get around type erasure.</p>
 
@@ -409,7 +409,7 @@
 
 <p>At the end of the day, JVM only knows <code>ProducerActor[_, _]</code> <code>KeyedMessage[_, _]</code> at run-time. Type information of the type parameters are not carried over from compile-time. Matching whatever instantiation of <code>KeyedMessage[X, Y]</code> to <code>KeyedMessage[_, _]</code> is unduly legal(though an unchecked warning should be issued, more on that later). In <code>TestApp</code>, the illegal <code>KeyedMessage[String, String]</code> will match the first clause. A run-time exception will be thrown because <code>producer.send</code> is expecting <code>KeyedMessage[Int, String]</code>.</p>
 
-<h1>Reification using TypeTag[T]</h1>
+<h3>Reification using TypeTag[T]</h3>
 
 <p>The solution, as <a href="https://groups.google.com/forum/#!topic/akka-user/7gd2Tfwax5Q">suggested by Roland Kuhn</a>, is to use <code>TypeTag[T]</code>. Basically, to make JVM aware of what <code>K, V</code> really are, a technique called <strong>type reification</strong> is needed. It&rsquo;s a behaviour that enough information is retained so that JVM knows what type parameters are during run-time. Scala&rsquo;s <code>TypeTag[T]</code> provides such functionality:</p>
 
@@ -471,7 +471,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<h1>Props Factory Pattern</h1>
+<h3>Props Factory Pattern</h3>
 
 <p>If we try to create a <code>ProducerActor</code> in this way:</p>
 
@@ -503,7 +503,7 @@
 
 <p>By doing so, we&rsquo;re assured that the compiler would generate the needed implicits for <code>Props</code> object right at the line of <code>actorOf</code>.</p>
 
-<h1>Reify List[KeyedMessage[K, V]]</h1>
+<h3>Reify List[KeyedMessage[K, V]]</h3>
 
 <p>Notice that <strong>Kafka</strong> <code>Producer</code>&rsquo;s <code>send</code> actually accepts <strong>vararg</strong>:</p>
 
@@ -575,7 +575,9 @@
     <id>http://cfchou.github.io/blog/2015/02/17/translate-and-override-val-slash-var-slash-def</id>
     <content type="html"><![CDATA[<p><strong>Val/var/def</strong> are Scala&rsquo;s language constructs that manifest immutibility amongst other features. Looking behind how <strong>scalac</strong> translates them helps us to understand more about related semantics like instance initialization, override, etc..</p>
 
-<h1>Translate val/var/def to java</h1>
+<p>-</p>
+
+<h3>Translate val/var/def to java</h3>
 
 <p>There are a few simple rules to translate val/var/def from scala to java.</p>
 
@@ -802,11 +804,13 @@
 
 <hr />
 
-<h1>Override between val/var/def</h1>
+<h3>Override between val/var/def</h3>
 
 <p>The other aspect of this topic is override rules. The rationale behind the rules normally can be obtained from applying <strong>Substitution Principle</strong>. It&rsquo;s the error messages that sometimes may cause confusion. We&rsquo;ll reason about the legality by <strong>Substitution Principle</strong> or by looking at the translated java code.</p>
 
-<h3>var/def can&rsquo;t override val</h3>
+<p>-</p>
+
+<h4>var/def can&rsquo;t override val</h4>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -829,7 +833,9 @@
 
 <p>It&rsquo;s because clients of A1 would always expect <code>a</code> to be immutable. That&rsquo;s the value would always be the same for every reads. Nevertheless, A2 would break the contract.</p>
 
-<h3>val/def can&rsquo;t override var</h3>
+<p>-</p>
+
+<h4>val/def can&rsquo;t override var</h4>
 
 <p>Firstly, <strong>val</strong> can&rsquo;t override <strong>var</strong>:</p>
 
@@ -858,11 +864,15 @@
 
 <p>Next, the reason why <strong>def</strong> can&rsquo;t override <em>var</em> is similar. Plus, the clients of A2 can&rsquo;t both read and write to <strong>def</strong> as it can to <strong>var</strong>. Under the hood, <strong>def</strong> is only one method, whilst <strong>var</strong> gets translated to a getter and a setter.</p>
 
-<h3>val can override def with no parameters</h3>
+<p>-</p>
+
+<h4>val can override def with no parameters</h4>
 
 <p>Think everyone&rsquo;s agreed.</p>
 
-<h3>var can&rsquo;t override def</h3>
+<p>-</p>
+
+<h4>var can&rsquo;t override def</h4>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -904,7 +914,7 @@
 
 <hr />
 
-<h1>val/var/def with different access modifiers</h1>
+<h3>val/var/def with different access modifiers</h3>
 
 <p>We haven&rsquo;t disscussed about <strong>val/var/def</strong> with other access modifiers like protect, package private, etc.. However, one can decompile the translated java by using tools like javap or <a href="http://jd.benow.ca/">JD-GUI</a> and examine the result himself.</p>
 
