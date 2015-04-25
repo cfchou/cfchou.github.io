@@ -349,10 +349,10 @@
 <p>From the figure, assume <code>maxNumOffsets == 1</code>,</p>
 
 <ol>
-<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now)</code> and return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
-<li><p>If <code>timestamp == EarliestTime</code>, we get <code>(0, t1)</code> and return <code>[0]</code> which is the offset to the first messsage in the partition.</p></li>
-<li><p>If <code>timestamp == T1</code>, we get <code>(0, t1)</code> and return <code>[0]</code>. Note that <code>T1 &lt; t2</code>.</p></li>
-<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2)</code> and return <code>[7]</code>.</p></li>
+<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now)</code> then return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
+<li><p>If <code>timestamp == EarliestTime</code>, we get <code>(0, t1)</code> then return <code>[0]</code> which is the offset to the first messsage in the partition.</p></li>
+<li><p>If <code>timestamp == T1</code>, we get <code>(0, t1)</code> then return <code>[0]</code>. Note that <code>T1 &lt; t2</code>.</p></li>
+<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2)</code> then return <code>[7]</code>.</p></li>
 </ol>
 
 
@@ -376,10 +376,10 @@
 <p>Say if <code>maxNumOffsets == 2</code>, then:</p>
 
 <ol>
-<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now), (7, t2)</code> and return <code>[8, 7]</code>.</p></li>
-<li><p>If <code>timestamp == EarliestTime</code>, we only get <code>(0, t1)</code> and return <code>[0]</code>.</p></li>
-<li><p>If <code>timestamp == T1</code>, we only get <code>(0, t1)</code> and return <code>[0]</code>.</p></li>
-<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2), (0, t1)</code> and return <code>[7, 0]</code>.</p></li>
+<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now), (7, t2)</code> then return <code>[8, 7]</code>.</p></li>
+<li><p>If <code>timestamp == EarliestTime</code>, we only get <code>(0, t1)</code> then return <code>[0]</code>.</p></li>
+<li><p>If <code>timestamp == T1</code>, we only get <code>(0, t1)</code> then return <code>[0]</code>.</p></li>
+<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2), (0, t1)</code> then return <code>[7, 0]</code>.</p></li>
 </ol>
 
 
