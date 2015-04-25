@@ -275,7 +275,7 @@
 
 
 <p><code>baseOffset</code> is the offset of the first message(in the previous segment) in this segemnt <code>i</code>.
-<code>lastModified</code> is the timestamp of the latest message in this segment <code>i</code>.</p>
+<code>lastModified</code> is the timestamp of the latest message in this segment <code>i</code>.jHere is an example:</p>
 
 <p><img src="/images/post/offsetrequest1.png" alt="map log segements to offsetTimeArray" /></p>
 
@@ -303,7 +303,7 @@
 <ol>
 <li>If <code>timestamp == LatestTime</code>, we gets the last index(of the padding element).</li>
 <li>If <code>timestamp == EarliestTime</code>, we get 0.</li>
-<li>Otherwise, search backward to find the first element which latest message happened <strong>before</strong> <code>timestamp</code>.</li>
+<li>Otherwise, search backward to find the first element whose latest message happened <strong>before</strong> <code>timestamp</code>.</li>
 </ol>
 
 
@@ -349,10 +349,10 @@
 <p>From the figure, assume <code>maxNumOffsets == 1</code>,</p>
 
 <ol>
-<li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now)</code> then return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
-<li><p>If <code>timestamp == EarliestTime</code>, we get <code>(0, t1)</code> then return <code>[0]</code> which is the offset to the first messsage in the partition.</p></li>
-<li><p>If <code>timestamp == T1</code>, we get <code>(0, t1)</code> then return <code>[0]</code>. Note that <code>T1 &lt; t2</code>.</p></li>
-<li><p>If <code>timestamp == T2</code>, we get <code>(7, t2)</code> then return <code>[7]</code>.</p></li>
+<li><p>If <code>timestamp == LatestTime</code>, we get <code>startIndex == 2</code> pointing to <code>(8, now)</code> then return <code>[8]</code>, which is the offset to the latest message in the partition.</p></li>
+<li><p>If <code>timestamp == EarliestTime</code>, we get <code>startIndex == 0</code> pointing to <code>(0, t1)</code> then return <code>[0]</code> which is the offset to the first messsage in the partition.</p></li>
+<li><p>If <code>timestamp == T1</code>, we get <code>startIndex == 0</code> pointing to <code>(0, t1)</code> then return <code>[0]</code>. Note that <code>(7, t2)</code> is skipped because <code>T1 &lt; t2</code>.</p></li>
+<li><p>If <code>timestamp == T2</code>, we get <code>startIndex == 1</code> pointing to <code>(7, t2)</code> then return <code>[7]</code>.</p></li>
 </ol>
 
 
@@ -373,7 +373,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Say if <code>maxNumOffsets == 2</code>, with a <code>startIndex</code> then:</p>
+<p>Say if <code>maxNumOffsets == 2</code>, with the calculated <code>startIndex</code> above, then:</p>
 
 <ol>
 <li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now), (7, t2)</code> then return <code>[8, 7]</code>.</p></li>
@@ -385,7 +385,7 @@
 
 <p>That&rsquo;s it. To conclude, <strong>the offsets we get, will be either the offsets to the first messages in log segments or the offset to the latest message on the partition</strong>.</p>
 
-<p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than 1 for the time being.</p>
+<p>This also explains a common problem: people often see offset 0 when they supply a unix <code>timestamp</code> to query offsets. That&rsquo;s simply because <code>log.sement.bytes</code> is 1 GB per default, the number of segments probably has&rsquo;t grown to more than 1 for the time being so they get the offset to the first messsage of the first segment.</p>
 </div>
 
 
