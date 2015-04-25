@@ -4,7 +4,7 @@
   <title><![CDATA[Category: kafka | Been there, done that]]></title>
   <link href="http://cfchou.github.io/blog/categories/kafka/atom.xml" rel="self"/>
   <link href="http://cfchou.github.io/"/>
-  <updated>2015-04-25T11:02:46+08:00</updated>
+  <updated>2015-04-25T11:19:51+08:00</updated>
   <id>http://cfchou.github.io/</id>
   <author>
     <name><![CDATA[cfchou]]></name>
@@ -94,7 +94,7 @@ val kafka.api.OffsetRequest.LatestTime: Long = -2
 log.segment.bytes=65536
 </code></pre>
 
-<p>Here I change it to 64 KB for testing. <strong>WARNING:</strong> change in segment size would remove the existing log(hence messages are lost).</p>
+<p>Here I change it to 64 KB for testing. <strong>WARNING:</strong> change in segment size might result in the loss of data.</p>
 
 <p><img src="/images/post/logsegments.png" alt="log files on my machine" /></p>
 
@@ -180,7 +180,7 @@ offsetTimeArray(segsArray.length) = (log.logEndOffset,
 <ol>
 <li>If <code>timestamp == LatestTime</code>, we gets the last index(of the padding element).</li>
 <li>If <code>timestamp == EarliestTime</code>, we get 0.</li>
-<li>Otherwise, search backward to find the first element which latest message happened before <code>timestamp</code>.</li>
+<li>Otherwise, search backward to find the first element which latest message happened <strong>before</strong> <code>timestamp</code>.</li>
 </ol>
 
 
@@ -226,7 +226,7 @@ for(j &lt;- 0 until retSize) {
 }
 </code></pre>
 
-<p>Say if <code>maxNumOffsets == 2</code>, then:</p>
+<p>Say if <code>maxNumOffsets == 2</code>, with a <code>startIndex</code> then:</p>
 
 <ol>
 <li><p>If <code>timestamp == LatestTime</code>, we get <code>(8, now), (7, t2)</code> then return <code>[8, 7]</code>.</p></li>
